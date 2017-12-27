@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Bomb Party</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    <script defer src="https://use.fontawesome.com/releases/v5.0.2/js/all.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-expand-md fixed-top">
+      <button type="button" class="btn btn-link" onclick="" style="margin-left:-5px;"><i class="fas fa-cog" style="color:white;"></i></button>
+      <span class="navbar-brand" style="color:white;" id="name" contenteditable="true">User {{index}}</span>
+      <div class="navbar-right">
+        <span class="navbar-brand" style="color:white;" id="score">
+          0
+        </span>
+      </div>
+    </nav>
+
+    <main role="main" class="container text-center" style="padding-top:65px">
+      <div id="scoreAlert"></div>
+      
+      <div class="preview">
+        <h1 id="preview">Start typing below</h1>
+      </div>
+      
+      <div class="inputarea bottom-float">
+        <input class="form-control form-control-lg text-center" id="word" placeholder="Word containing {{letters}}">
+      </div>
+    </main>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io();
+
+      var word = '{{letters}}'; 
+
+      var cookie = document.cookie;
+      if(/name=/.test(cookie)) {
+        var match = /name=/.exec(cookie);
+        var index = match.index + match[0].length;
+        var name = cookie.slice(index);
+        name = name.split(';')[0];
+        var nameText = document.createTextNode(name);
+        var target = document.getElementById('name');
+        target.innerHTML = '';
+        target.appendChild(nameText);
+      }
+
+      document.getElementById("word")
+        .addEventListener("keyup", function(event) {
+          event.preventDefault();
+          
+          var text = document.createTextNode(document.getElementById('word').value.toUpperCase());
+
+          var exp = new RegExp(word);
+          console.log(exp);
+          //var index = .index;
+          var res = exp.exec(document.getElementById('word').value.toUpperCase());
+
+          while (document.getElementById('preview').firstChild) {
+            document.getElementById('preview').removeChild(document.getElementById('preview').firstChild);
+          }
+          if(res != null) {
+            console.log(res);
+            var left = document.createTextNode(document.getElementById('word').value.toUpperCase().slice(0, res.index));
+            var middle = document.createTextNode(document.getElementById('word').value.toUpperCase().slice(res.index, res.index+word.length));
+            var right = document.createTextNode(document.getElementById('word').value.toUpperCase().slice(res.index + word.length));
+            console.log(left, middle, right);
+            var expContainer = document.createElement('span');
+            expContainer.style.color = '#FFFFFF';
+            if(res.index != 0) {
+              document.getElementById('preview').appendChild(left);
+              expContainer.appendChild(middle);
+              document.getElementById('preview').appendChild(expContainer);
+              document.getElementById('preview').appendChild(right);
+            }
+            else if(res.index == 0) {
+              expContainer.appendChild(middle);
+              document.getElementById('preview').appendChild(expContainer);
+              document.getElementById('preview').appendChild(right);
+            }
+          } else {
+            document.getElementById('preview').innerHTML = '';
+            document.getElementById('preview').appendChild(text);
+          }
+          if(document.getElementById('preview').innerHTML == '') {
+            document.getElementById('preview').innerHTML = 'Start typing below';
+          }
+
+          document.getElementById('preview').style.color = '#000000'
+          if (event.keyCode === 13) {
+              //alert(document.getElementById('word').value);
+              
+            //console.log();
+            if(exp.test(res)) socket.emit('word', document.getElementById('word').value.toLowerCase());
+            else document.getElementById('preview').style.color = '#960606';
+          }
+      });
+
+      document.getElementById('name').addEventListener('keyup', (event) => {
+        document.cookie = 'name=' + document.getElementById('name').innerHTML;
+      });
+
+      document.getElementById('name').addEventListener('keydown', (event) => {
+          if (event.keyCode === 13) {
+            window.getSelection().removeAllRanges();
+            event.preventDefault();
+          }
+        });
+
+      var score = 0;
+      socket.on('wordResult', (res) => {
+        //document.getElementById('listAlert').innerHTML = '<div class="alert alert-success" role="alert">+1 point</div>';
+        console.log(res);
+        if(res == false) document.getElementById('preview').style.color = '#960606';
+        if(res == true) {
+          document.getElementById('word').value = '';
+          score++;
+          document.getElementById('score').innerHTML = score;
+        }
+      });
+      socket.on('newWord', (newWord) => {
+        document.getElementById('word').placeholder = newWord;
+        word = newWord;
+        document.getElementById('preview').style.color = '#25c452';
+      });
+    </script>
+  </body>
+</html>

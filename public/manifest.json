@@ -1,0 +1,16 @@
+{
+    "name": "Bomb Party",
+    "icons": [
+        {
+            "src": "/icons/128x.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "density": 0.75
+        }
+    ],
+    "theme_color": "#913605",
+    "background_color": "#e55609",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait"
+}
